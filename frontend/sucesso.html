@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SUcesso</title>
+    <style>
+        body {
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            background: linear-gradient(to top, #0f172a, #3c74de);
+        }
+
+        .card{
+            background-color: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+        }
+        
+        .card h1 {
+            margin-bottom: 20px;
+            color: green;
+        }
+        
+        button {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 8px;
+            background-color: #2563eb;
+            color: white;
+            font-size: 16px;
+        }
+
+        button:hover {
+            background-color: #1d4ed8;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>Ocorrência enviada com sucesso!</h1>
+        <p>Sua denúncia foi registrada.</p>
+        <button onclick="window.location.replace('mapa.html')">Voltar</button>
+    </div>
+    <script>
+        function voltarInicio() {
+            window.location.href = "mapa.html";
+        }
+    </script>
+</body>
+</html>

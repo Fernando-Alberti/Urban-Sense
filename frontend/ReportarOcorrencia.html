@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<style>
+        body {
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            background: linear-gradient(to top, #0f172a, #3c74de);
+        }
+
+        .card{
+            background-color: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+        }
+        
+        .card h1 {
+            margin-bottom: 20px;
+            color: green;
+        }
+        
+        button {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 8px;
+            background-color: #2563eb;
+            color: white;
+            font-size: 16px;
+        }
+
+        button:hover {
+            background-color: #1d4ed8;
+            cursor: pointer;
+        }
+        
+        input {
+            display: block;
+            margin-bottom: 10px;
+        }
+    </style>
+<body>
+    <div class="card">
+        <h1>Reportar Ocorrência</h1>
+        <form id="form-ocorrencia" onsubmit="enviarOcorrencia(event)">
+            <input type="text" id="tipo" placeholder="Tipo da ocorrência" required />
+            <input type="text" id="descricao" placeholder="Descrição" />
+        <button type="submit">Enviar ocorrência</button>
+        <button onclick="window.location.href='mapa.html'">Voltar</button>
+        </form>
+    
+        <p id="resultado"></p>
+    </div>
+
+   <script>
+
+async function pegarCidade(lat, lon) {
+    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`);
+    const data = await res.json();
+
+    return data.address.city || data.address.town || data.address.village || "Cidade desconhecida";
+}
+
+async function enviarOcorrencia(event) {
+    event.preventDefault();
+
+    const tipo = document.getElementById('tipo').value;
+    const descricao = document.getElementById('descricao').value;
+
+    // pegar do localStorage (mesmo nome usado no mapa!)
+    let lat = localStorage.getItem('userLat');
+    let lon = localStorage.getItem('userLon');
+
+    if (!lat || !lon) {
+        alert("Localização não encontrada. Volte ao mapa.");
+        return;
+    }
+
+    // converter pra número
+    lat = parseFloat(lat);
+    lon = parseFloat(lon);
+
+    try {
+        const cidade = await pegarCidade(lat, lon);
+
+        console.log("Cidade:", cidade);
+        console.log("Lat:", lat, "Lon:", lon);
+
+        const response = await fetch("http://127.0.0.1:8000/ocorrencia", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                tipo: tipo,
+                descricao: descricao,
+                lat: lat,
+                lon: lon,
+                cidade: cidade
+            })
+        });
+
+        const data = await response.json();
+        console.log("Resposta do backend:", data);
+
+        if (response.ok) {
+            window.location.href = "sucesso.html";
+        } else {
+            alert("Erro ao enviar ocorrência");
+        }
+
+    } catch (err) {
+        console.error("Erro no envio:", err);
+        alert("Erro ao enviar ocorrência");
+    }
+}
+
+</script>
+</body>
+</html>

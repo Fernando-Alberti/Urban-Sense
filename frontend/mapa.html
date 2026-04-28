@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UrbanSense</title>
+    <style>
+        body {
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            background: linear-gradient(to top, #0f172a, #3c74de);
+        }
+
+        .card{
+            background-color: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+        }
+        
+        .card h1 {
+            margin-bottom: 20px;
+            color: green;
+        }
+        
+        button {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 8px;
+            background-color: #2563eb;
+            color: white;
+            font-size: 16px;
+        }
+
+        button:hover {
+            background-color: #1d4ed8;
+            cursor: pointer;
+        }
+    </style>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+</head>
+<body>
+    <div class="card">
+        <h1>UrbanSense</h1>
+        <p>Sistema de ocorrências urbanas</p>
+
+        <button onclick="irReportarOcorrencia()">Reportar Ocorrência</button>
+        <button onclick="irVerOcorrencias()">Ver Ocorrências</button>
+    
+        <div id="map" style="height: 500px;"></div>
+        <div id="info"></div>
+        <div id="risco"></div>
+    </div>
+  <script>
+    let userLat = null;
+    let userLon = null;
+
+    function irReportarOcorrencia() {
+        navigator.geolocation.getCurrentPosition((pos) => {
+            userLat = pos.coords.latitude;
+            userLon = pos.coords.longitude;
+            localStorage.setItem("userLat", userLat);
+            localStorage.setItem("userLon", userLon);
+            window.location.href = "ReportarOcorrencia.html";
+        });
+    }
+
+    function irVerOcorrencias() {
+        window.location.href = "VerOcorrencias.html";
+    }
+
+    async function carregarMapa() {
+        navigator.geolocation.getCurrentPosition(async (pos) => {
+
+            const lat = pos.coords.latitude;
+            const lon = pos.coords.longitude;
+
+            localStorage.setItem("userLat", lat);
+            localStorage.setItem("userLon", lon);
+
+            userLat = lat;
+            userLon = lon;
+
+            console.log("Precisão:", pos.coords.accuracy, "metros");
+
+            map.setView([lat, lon], 16);
+
+            // limpa marcadores antigos
+            map.eachLayer(layer => {
+                if (layer instanceof L.Marker) {
+                    map.removeLayer(layer);
+                }
+            });
+
+            const userIcon = L.icon({
+                iconUrl: 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png',
+                iconSize: [32, 32],
+                iconAnchor: [16, 32]
+            });
+
+            L.marker([lat, lon], { icon: userIcon })
+                .addTo(map)
+                .bindPopup("Você está aqui");
+
+            // 🔥 FETCH
+            const res = await fetch(
+                `http://127.0.0.1:8000/dados-mapa?lat=${lat}&lon=${lon}&raio=150`
+            );
+
+            const data = await res.json();
+
+            console.log(data);
+
+            // =========================
+            // 🔥 PARTE CORRIGIDA AQUI
+            // =========================
+
+            let perto = 0;
+            let medio = 0;
+            let longe = 0;
+
+            data.ocorrencias_proximas.forEach(o => {
+                if (o.distancia <= 0.5) {
+                    perto++;
+                } else if (o.distancia <= 1) {
+                    medio++;
+                } else {
+                    longe++;
+                }
+            });
+
+            function cor(qtd) {
+                if (qtd >= 3) return "red";
+                if (qtd >= 1) return "orange";
+                return "green";
+            }
+
+            const corPerto = cor(perto);
+            const corMedio = cor(medio);
+            const corLonge = cor(longe);
+
+            // remove círculos antigos
+            if (window.circulos) {
+                window.circulos.forEach(c => map.removeLayer(c));
+            }
+
+            window.circulos = [];
+
+            // 🔴 500m
+            window.circulos.push(
+                L.circle([lat, lon], {
+                    radius: 500,
+                    color: corPerto,
+                    fillOpacity: 0.2
+                }).addTo(map)
+            );
+
+            // 🟡 1000m
+            window.circulos.push(
+                L.circle([lat, lon], {
+                    radius: 1000,
+                    color: corMedio,
+                    fillOpacity: 0.15
+                }).addTo(map)
+            );
+
+            // 🟢 2000m
+            window.circulos.push(
+                L.circle([lat, lon], {
+                    radius: 2000,
+                    color: corLonge,
+                    fillOpacity: 0.1
+                }).addTo(map)
+            );
+
+            // =========================
+
+            const ocorrenciaIcon = L.icon({
+                iconUrl: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png',
+                iconSize: [32, 32],
+                iconAnchor: [16, 32]
+            });
+
+            data.ocorrencias_proximas.forEach(o => {
+                L.marker([o.lat, o.lon], { icon: ocorrenciaIcon })
+                    .addTo(map)
+                    .bindPopup(`
+                        <b>${o.tipo}</b><br>
+                        ${o.descricao}<br>
+                        ${o.distancia} km
+                    `);
+            });
+
+            document.getElementById("info").innerText =
+                `Ocorrências próximas: ${data.resumo.proximas}`;
+        });
+    }
+
+    const map = L.map('map').setView([0, 0], 2);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+
+    carregarMapa();
+</script>
+</body>
+</html>

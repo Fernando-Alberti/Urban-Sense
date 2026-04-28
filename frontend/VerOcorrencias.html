@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Ocorrências</title>
+</head>
+<style>
+        body {
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            background: linear-gradient(to top, #0f172a, #3c74de);
+        }
+
+        .card{
+            background-color: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+        }
+        
+        .card h1 {
+            margin-bottom: 20px;
+            color: green;
+        }
+        
+        button {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 8px;
+            background-color: #2563eb;
+            color: white;
+            font-size: 16px;
+        }
+
+        button:hover {
+            background-color: #1d4ed8;
+            cursor: pointer;
+        }
+    </style>
+<body>
+
+    <div class="card">
+        <h1>Lista de Ocorrências</h1>
+
+    <ul id="lista"></ul>
+
+    <br>
+            
+    <button onclick="window.location.href='mapa.html'">Voltar</button>
+    </div>
+ <script>
+
+// 1. FUNÇÃO: pegar cidade
+async function pegarCidade(lat, lon) {
+    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`);
+    const data = await res.json();
+
+    return (
+        data.address.city ||
+        data.address.town ||
+        data.address.village ||
+        "Cidade não encontrada"
+    );
+}
+
+
+// 2. FUNÇÃO PRINCIPAL
+async function carregarOcorrencias() {
+
+    navigator.geolocation.getCurrentPosition(async (position) => {
+
+        const lat = position.coords.latitude;
+        const lon = position.coords.longitude;
+
+        let cidade = await pegarCidade(lat, lon);
+        cidade = cidade.split(",")[0].trim();
+
+        const res = await fetch(
+            `http://127.0.0.1:8000/ocorrencias?cidade=${encodeURIComponent(cidade)}`
+        );
+
+        const dados = await res.json();
+
+        const container = document.getElementById("lista");
+        container.innerHTML = "";
+
+        const grupos = {};
+
+        for (const o of dados) {
+
+            // 🔥 fallback mais seguro
+            const bairro = o.bairro?.trim() || "Sem bairro";
+
+            if (!grupos[bairro]) {
+                grupos[bairro] = [];
+            }
+
+            grupos[bairro].push(o);
+        }
+
+        for (const bairro in grupos) {
+
+            const titulo = document.createElement("h2");
+            titulo.innerText = bairro;
+            container.appendChild(titulo);
+
+            grupos[bairro].forEach(o => {
+
+                const div = document.createElement("div");
+
+                let hora = "";
+                if (o.hora && o.hora.includes("T")) {
+                    hora = o.hora.split("T")[1].split(".")[0].slice(0,5);
+                }
+
+                const data = new Date(o.hora).toLocaleDateString("pt-BR");
+
+                div.innerHTML = `
+                    <b>${o.tipo}</b><br>
+                    ${o.descricao}<br>
+                    ${o.rua || "Rua desconhecida"}, ${data} às ${hora}
+                `;
+
+                container.appendChild(div);
+            });
+        }
+
+    }, (err) => {
+        console.error("Erro de localização:", err);
+    });
+}
+
+carregarOcorrencias();
+
+</script>
+</body>
+</html>
