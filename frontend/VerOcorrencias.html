@@ -2,58 +2,272 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Ocorrências</title>
-</head>
-<style>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lista de Ocorrências</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
         body {
             margin: 0;
-            height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-            background: linear-gradient(to top, #0f172a, #3c74de);
+            min-height: 100vh;
+            background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #3c74de 100%);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            padding: 20px;
+            overflow-x: hidden;
+            position: relative;
         }
 
-        .card{
-            background-color: white;
-            padding: 40px;
-            border-radius: 12px;
-            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 250px;
+            background: radial-gradient(circle at 20% 30%, rgba(255,255,255,0.15) 0%, transparent 60%);
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+            animation: fadeInUp 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .header-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            padding: clamp(25px, 6vw, 35px);
+            border-radius: 24px;
+            box-shadow: 
+                0 20px 40px rgba(0, 0, 0, 0.2),
+                0 0 0 1px rgba(255, 255, 255, 0.2);
+            margin-bottom: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
         
-        .card h1 {
-            margin-bottom: 20px;
-            color: green;
+        .header-card h1 {
+            margin: 0;
+            color: #059669;
+            font-size: clamp(24px, 6vw, 32px);
+            font-weight: 700;
+            line-height: 1.3;
         }
-        
-        button {
-            padding: 10px 16px;
+
+        .lista-container {
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(15px);
+            padding: clamp(25px, 6vw, 35px);
+            border-radius: 24px;
+            box-shadow: 
+                0 20px 40px rgba(0, 0, 0, 0.15),
+                0 0 0 1px rgba(255, 255, 255, 0.2);
+            max-height: 70vh;
+            overflow-y: auto;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            scrollbar-width: thin;
+            scrollbar-color: #cbd5e1 #f8fafc;
+        }
+
+        .lista-container::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .lista-container::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 10px;
+        }
+
+        .lista-container::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
+
+        .lista-container::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        /* Bairros - Cards modernos */
+        h2 {
+            color: #1e293b;
+            font-size: clamp(18px, 4.5vw, 22px);
+            font-weight: 700;
+            margin: 0 0 20px 0;
+            padding-bottom: 12px;
+            border-bottom: 3px solid #3b82f6;
+            position: relative;
+        }
+
+        h2::after {
+            content: '📍';
+            margin-left: 8px;
+            font-size: 20px;
+        }
+
+        /* Item de ocorrência */
+        .ocorrencia-item {
+            background: black;
+            margin-bottom: 16px;
+            padding: clamp(18px, 4vw, 24px);
+            border-radius: 20px;
+            border-left: 5px solid #3b82f6;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            animation: itemSlideIn 0.4s ease-out forwards;
+            opacity: 0;
+            transform: translateX(-20px);
+        }
+
+        .ocorrencia-item:nth-child(even) {
+            border-left-color: #10b981;
+        }
+
+        .ocorrencia-item:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
+        }
+
+        @keyframes itemSlideIn {
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .ocorrencia-item b {
+            color: #1e293b;
+            font-size: clamp(16px, 4vw, 18px);
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        .ocorrencia-item span {
+            color: #64748b;
+            font-size: clamp(14px, 3.5vw, 15px);
+            line-height: 1.5;
+        }
+
+        /* Botão voltar */
+        .btn-voltar {
+            display: block;
+            width: 100%;
+            max-width: 300px;
+            margin: 30px auto 0;
+            padding: clamp(16px, 4.5vw, 20px);
             border: none;
-            border-radius: 8px;
-            background-color: #2563eb;
+            border-radius: 16px;
+            background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
             color: white;
-            font-size: 16px;
+            font-size: clamp(16px, 4vw, 18px);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 8px 25px rgba(107, 114, 128, 0.4);
+            min-height: 56px;
         }
 
-        button:hover {
-            background-color: #1d4ed8;
-            cursor: pointer;
+        .btn-voltar:hover {
+            background: linear-gradient(135deg, #4b5563 0%, #374151 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 12px 35px rgba(107, 114, 128, 0.6);
+        }
+
+        .btn-voltar:active {
+            transform: translateY(0);
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #64748b;
+            font-size: clamp(16px, 4vw, 18px);
+        }
+
+        .loading::after {
+            content: '🔄';
+            display: block;
+            font-size: 32px;
+            margin-bottom: 12px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        /* Responsivo */
+        @media (max-width: 480px) {
+            body {
+                padding: 15px;
+            }
+            
+            .lista-container {
+                max-height: 65vh;
+                padding: 25px 20px;
+            }
+        }
+
+        @media (max-width: 360px) {
+            body {
+                padding: 12px;
+            }
+            
+            .lista-container {
+                padding: 20px 16px;
+            }
+        }
+
+        /* Dark mode */
+        @media (prefers-color-scheme: dark) {
+            .header-card, .lista-container {
+                background: rgba(30, 41, 59, 0.95);
+                color: white;
+            }
+            
+            h2, .ocorrencia-item b {
+                color: #f1f5f9;
+            }
+            
+            .ocorrencia-item span {
+                color: #cbd5e1;
+            }
         }
     </style>
+</head>
 <body>
+    <div class="container">
+        <div class="header-card">
+            <h1>Lista de Ocorrências</h1>
+        </div>
 
-    <div class="card">
-        <h1>Lista de Ocorrências</h1>
+        <div class="lista-container">
+            <div class="loading" id="loading">Carregando ocorrências...</div>
+            <ul id="lista" style="list-style: none; padding: 0; margin: 0;"></ul>
+        </div>
 
-    <ul id="lista"></ul>
-
-    <br>
-            
-    <button onclick="window.location.href='mapa.html'">Voltar</button>
+        <button class="btn-voltar" onclick="window.location.href='mapa.html'">
+            ↩️ Voltar ao Mapa
+        </button>
     </div>
- <script>
 
+<script>
 // 1. FUNÇÃO: pegar cidade
 async function pegarCidade(lat, lon) {
     const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`);
@@ -67,11 +281,12 @@ async function pegarCidade(lat, lon) {
     );
 }
 
-
 // 2. FUNÇÃO PRINCIPAL
 async function carregarOcorrencias() {
-
+    const loading = document.getElementById("loading");
+    
     navigator.geolocation.getCurrentPosition(async (position) => {
+        loading.style.display = 'none';
 
         const lat = position.coords.latitude;
         const lon = position.coords.longitude;
@@ -91,7 +306,6 @@ async function carregarOcorrencias() {
         const grupos = {};
 
         for (const o of dados) {
-
             // 🔥 fallback mais seguro
             const bairro = o.bairro?.trim() || "Sem bairro";
 
@@ -102,15 +316,16 @@ async function carregarOcorrencias() {
             grupos[bairro].push(o);
         }
 
+        let delay = 0;
         for (const bairro in grupos) {
-
             const titulo = document.createElement("h2");
             titulo.innerText = bairro;
             container.appendChild(titulo);
 
-            grupos[bairro].forEach(o => {
-
+            grupos[bairro].forEach((o, index) => {
                 const div = document.createElement("div");
+                div.className = "ocorrencia-item";
+                div.style.animationDelay = `${delay + index * 50}ms`;
 
                 let hora = "";
                 if (o.hora && o.hora.includes("T")) {
@@ -120,22 +335,24 @@ async function carregarOcorrencias() {
                 const data = new Date(o.hora).toLocaleDateString("pt-BR");
 
                 div.innerHTML = `
-                    <b>${o.tipo}</b><br>
-                    ${o.descricao}<br>
-                    ${o.rua || "Rua desconhecida"}, ${data} às ${hora}
+                    <b>${o.tipo}</b>
+                    <span>${o.descricao}<br>
+                    ${o.rua || "Rua desconhecida"} • ${data} ${hora ? `• ${hora}` : ''}</span>
                 `;
 
                 container.appendChild(div);
             });
+
+            delay += grupos[bairro].length * 50;
         }
 
     }, (err) => {
         console.error("Erro de localização:", err);
+        document.getElementById("loading").innerHTML = "Erro ao carregar localização";
     });
 }
 
 carregarOcorrencias();
-
 </script>
 </body>
 </html>
